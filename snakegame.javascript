@@ -1,4 +1,5 @@
 const readline = require("readline");
+
 readline.emitKeypressEvents(process.stdin);
 process.stdin.setRawMode(true);
 
@@ -9,9 +10,26 @@ const HEIGHT = 10;
 // Game variables
 let snake = [{ x: 5, y: 5 }];
 let direction = { x: 1, y: 0 };
-let food = spawnFood();
-let gameOver = false;
 let score = 0;
+let gameOver = false;
+
+// Spawn food
+function spawnFood() {
+    let newFood;
+    while (true) {
+        newFood = {
+            x: Math.floor(Math.random() * WIDTH),
+            y: Math.floor(Math.random() * HEIGHT),
+        };
+
+        if (!snake.some(part => part.x === newFood.x && part.y === newFood.y)) {
+            break;
+        }
+    }
+    return newFood;
+}
+
+let food = spawnFood();
 
 // Draw board
 function draw() {
@@ -20,25 +38,34 @@ function draw() {
 
     for (let y = 0; y < HEIGHT; y++) {
         for (let x = 0; x < WIDTH; x++) {
+
             if (x === food.x && y === food.y) {
                 output += "🍎";
-            } else if (snake.some(part => part.x === x && part.y === y)) {
+            }
+            else if (snake.some(part => part.x === x && part.y === y)) {
                 output += "🟩";
-            } else {
+            }
+            else {
                 output += "⬛";
             }
         }
         output += "\n";
     }
+
     console.log(output);
     console.log("Score:", score);
+    console.log("Press Ctrl + C to exit");
 }
 
-// Move snake
+// Update snake position
 function update() {
-    const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
 
-    // Wall or self collision
+    const head = {
+        x: snake[0].x + direction.x,
+        y: snake[0].y + direction.y
+    };
+
+    // Wall collision
     if (
         head.x < 0 || head.x >= WIDTH ||
         head.y < 0 || head.y >= HEIGHT ||
@@ -50,6 +77,7 @@ function update() {
 
     snake.unshift(head);
 
+    // Food eaten
     if (head.x === food.x && head.y === food.y) {
         score++;
         food = spawnFood();
@@ -58,24 +86,12 @@ function update() {
     }
 }
 
-// Spawn food not on snake
-function spawnFood() {
-    let newFood;
-    while (true) {
-        newFood = {
-            x: Math.floor(Math.random() * WIDTH),
-            y: Math.floor(Math.random() * HEIGHT),
-        };
-        if (!snake.some(part => part.x === newFood.x && part.y === newFood.y)) {
-            break;
-        }
-    }
-    return newFood;
-}
-
-// Input handling
+// Keyboard controls
 process.stdin.on("keypress", (str, key) => {
-    if (key.ctrl && key.name === "c") process.exit();
+
+    if (key.ctrl && key.name === "c") {
+        process.exit();
+    }
 
     switch (key.name) {
         case "up":
@@ -88,4 +104,25 @@ process.stdin.on("keypress", (str, key) => {
             if (direction.x === 0) direction = { x: -1, y: 0 };
             break;
         case "right":
-            if (direction.x === 0) direction =
+            if (direction.x === 0) direction = { x: 1, y: 0 };
+            break;
+    }
+});
+
+// Game loop
+const interval = setInterval(() => {
+
+    if (gameOver) {
+        console.clear();
+        console.log("💀 GAME OVER 💀");
+        console.log("Final Score:", score);
+        process.exit();
+    }
+
+    update();
+    draw();
+
+}, 200);
+
+// Initial draw
+draw();
